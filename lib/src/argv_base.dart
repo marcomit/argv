@@ -17,12 +17,19 @@ sealed class _Argument {
   final String? description;
   final bool required;
 
+  /// Checks if the given argument match with this object
   bool _match(String arg) {
     if (arg.isEmpty) return false;
     if (arg == '--$name') return true;
     return abbr != null && arg == '-$abbr';
   }
 
+  /// Used to validate the given input
+  ///
+  /// It checks:
+  /// * if the field [abbr] is a single character.
+  /// * if [name] is not an empty string.
+  /// * if [name] does not contains any special characters
   void _validate() {
     if (name.isEmpty) {
       throw ArgvException('Argument name cannot be empty');
@@ -36,6 +43,19 @@ sealed class _Argument {
   }
 }
 
+/// Option class represents the classic options in the CLI.
+///
+/// There's two way you can pass value options:
+/// 1. --name value
+/// 2. --name=value
+///
+/// Parameters:
+/// * [name] the name of the option (parsed with two `-` before)
+/// * [abbr] the abbreviation of the name (parsed with single `-`)
+/// * [description] used for the [Argv.usage] method.
+/// * [allowed] if setted the value must be one of these, else throws [ArgvException].
+/// * [required] if enabled and not value provided throws a [ArgvException]
+/// * [defaultValue] if setted and not value provided this is the value.
 class Option extends _Argument {
   Option(
     super.name, {
