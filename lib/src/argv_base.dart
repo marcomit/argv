@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 /// Callback function that will be attached on a command
@@ -15,7 +16,7 @@ import 'dart:math';
 ///     }
 ///   });
 /// ```
-typedef ArgvCallback = void Function(ArgvResult);
+typedef ArgvCallback = FutureOr<void> Function(ArgvResult);
 
 /// Base class for all argument types (flags and options).
 ///
@@ -436,7 +437,7 @@ class Argv {
   /// Throws [ArgvException] if a command with this name already exists.
   Argv command(String name, {String? abbr, String? help, String? description}) {
     _checkAleadyInserted(_commands, name);
-    final child = Argv(name);
+    final child = Argv(name, description ?? '');
     _commands[name] = child;
     child._parent = this;
     return child;
@@ -902,7 +903,7 @@ class Argv {
   /// Returns [ArgvResult] containing all parsed and validated values.
   ///
   /// Throws [ArgvException] if parsing or validation fails.
-  ArgvResult run(List<String> args) {
+  FutureOr<ArgvResult> run(List<String> args) async {
     final res = _parse(args);
     _validate(res);
     Argv curr = this;
@@ -913,7 +914,7 @@ class Argv {
       if (!curr._commands.containsKey(cmd)) break;
       curr = curr._commands[cmd]!;
       if (curr._on != null) {
-        curr._on!(res);
+        await curr._on!(res);
       }
     }
 
