@@ -8,10 +8,6 @@ sealed class _Argument {
   final String? description;
 }
 
-class Command extends _Argument {
-  Command(super.name, {super.abbr, super.help, super.description});
-}
-
 class Option extends _Argument {
   Option(super.name, {super.abbr, super.help, super.description});
 }
@@ -28,14 +24,15 @@ class ArgvResult {
   final Map<String, bool> _flags = {};
   final Map<String, String> _options = {};
   final List<String> _commands = [];
+  final Map<String, String> _positionals = {};
 }
 
 class Argv {
   final Map<String, Option> _options = {};
   final Map<String, Flag> _flags = {};
-  final Map<String, Command> _commands = {};
-  final List<Argv> _children = [];
+  final Map<String, Argv> _commands = {};
   final List<Positional> _positionals = [];
+  Argv? parent;
 
   Argv flag(String name, {String? abbr, String? help, String? description}) {
     _checkAleadyInserted(_flags, name);
@@ -52,13 +49,9 @@ class Argv {
   }
 
   Argv command(String name, {String? abbr, String? help, String? description}) {
-    _checkAleadyInserted(_commands, name);
-    _commands[name] = Command(
-      name,
-      abbr: abbr,
-      help: help,
-      description: description,
-    );
+    if (_commands.containsKey(name))
+      throw ArgvException('Command $name already registered');
+    _commands[name] = Argv();
     return this;
   }
 
@@ -78,6 +71,48 @@ class Argv {
     if (args.containsKey(key)) {
       throw ArgvException('$key already resistered');
     }
+  }
+
+  bool _parseFlag(String arg) {
+    for (final flag in _flags.values) {
+      if (arg == '--${flag.name}') return true;
+      if (flag.abbr != null && arg == '-${flag.abbr}') return true;
+    }
+    return false;
+  }
+
+  (bool, int) _parseOption(String arg, List<String> args, ArgvResult res) {
+    return (false, 0);
+  }
+
+  ArgvResult parse(List<String> args) {
+    if (args.isEmpty) {
+      print('no arguments provided');
+    }
+    final res = ArgvResult();
+
+    Argv curr = this;
+
+    for (int i = 0; i < args.length; i++) {
+      final arg = args[i];
+      if (curr._commands.containsKey(arg)) {
+        curr = curr._commands[arg]!;
+        res._commands.add(arg);
+        continue;
+      }
+
+      if (_parseFlag(arg)) {
+        res._flags[arg] = true;
+        i++;
+        continue;
+      }
+      final (handled, consumed) = _parseOption(arg, args.sublist(i), res);
+      if (handled) {
+        i += consumed;
+        continue;
+      }
+    }
+    return res;
   }
 }
 
