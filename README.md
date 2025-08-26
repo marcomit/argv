@@ -43,6 +43,41 @@ git.command('commit')
 git.run(['commit', '-m', 'Initial commit', '--all']);
 ```
 
+## Context
+
+Define multiple `on` functions for the same command (like a middleware).
+```dart
+
+void requireName(ArgvResult res) {
+    if(res.positional('name') == null) throw Exception('Missing name');
+}
+
+final mosaic = Argv('mosaic');
+
+git.command('enable').on(requireName).on(...do something);
+git.command('disable').on(requireName);
+```
+
+You can also build the context and access it from every on callback
+```dart
+void requireName(ArgvResult res) {
+    if(res.positional('name') == null) throw Exception('Missing name');
+}
+
+Future<void> register(ArgvResult res) async {
+    final ctx = await Context.load();
+    res.set(ctx);
+}
+
+final mosaic = Argv('mosaic');
+
+git.command('enable').on(requireName).on(register).on((res) {
+    final ctx = res.get<Context>();
+    ... use your ctx here
+});
+
+```
+
 ## Installation
 
 ```yaml
