@@ -7,3 +7,7 @@
 
 ## 1.0.2
 - Added async support for commands callback
+
+## 1.0.3
+- Now you can attach multiple listener on commads
+- ArgvResult now has your own context that can passed through chained listeners

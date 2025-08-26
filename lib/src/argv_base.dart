@@ -227,6 +227,10 @@ class ArgvResult {
   final Map<String, String> _options = {};
   final List<String> _commands = [];
   final Map<String, String> _positionals = {};
+  final Map<Type, Object> _context = {};
+
+  T? get<T extends Object>() => _context[T] as T?;
+  void set<T extends Object>(T instance) => _context[T] = instance;
 
   /// Return the value of the flag [name]
   ///
@@ -305,7 +309,7 @@ class Argv {
   final Map<String, Flag> _flags = {};
   final Map<String, Argv> _commands = {};
   final List<String> _positionals = [];
-  ArgvCallback? _on;
+  final List<ArgvCallback> _on = [];
   Argv? _parent;
 
   /// Method to add a flag into the current command
@@ -465,7 +469,7 @@ class Argv {
   ///
   /// Returns this [Argv] instance for method chaining.
   Argv on(ArgvCallback callback) {
-    _on = callback;
+    _on.add(callback);
     return this;
   }
 
@@ -643,6 +647,12 @@ class Argv {
       curr = curr._parent!;
     }
     return acc;
+  }
+
+  FutureOr<void> _exec(ArgvResult res) async {
+    for (final callback in _on) {
+      await callback(res);
+    }
   }
 
   /// Parses a flag argument from the input.
@@ -908,14 +918,12 @@ class Argv {
     _validate(res);
     Argv curr = this;
 
-    if (curr._on != null) curr._on!(res);
+    curr._exec(res);
 
     for (final cmd in res._commands) {
       if (!curr._commands.containsKey(cmd)) break;
       curr = curr._commands[cmd]!;
-      if (curr._on != null) {
-        await curr._on!(res);
-      }
+      curr._exec(res);
     }
 
     return res;
