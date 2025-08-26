@@ -11,3 +11,8 @@
 ## 1.0.3
 - Now you can attach multiple listener on commads
 - ArgvResult now has your own context that can passed through chained listeners
+
+## 1.0.4
+- Fixed use function
+- Fixed set function
+- Fixed context and dependency injection
