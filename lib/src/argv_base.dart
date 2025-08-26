@@ -229,7 +229,8 @@ class ArgvResult {
   final Map<String, String> _positionals = {};
   final Map<Type, Object> _context = {};
 
-  T? get<T extends Object>() => _context[T] as T?;
+  T get<T extends Object>() => _context[T] as T;
+
   void set<T extends Object>(T instance) => _context[T] = instance;
 
   /// Return the value of the flag [name]
@@ -473,6 +474,67 @@ class Argv {
     return this;
   }
 
+  /// Insert the [instance] inside the container
+  ///
+  /// This registers the instance and
+  /// make it accessible for the other callbacks
+  ///
+  /// Example:
+  /// ```dart
+  /// parser.command('build').set<UserService>(UserService()).on((res) {
+  ///   res.get<UserService>(); // Here you can access to the all registered services
+  /// })
+  /// ```
+  Argv set<T extends Object>(T instance) {
+    return on((res) async => res.set(instance));
+  }
+
+  /// Attaches a function based on a registered service
+  ///
+  /// It registers a new callback by calling [on] and use [T]
+  /// to access a registered service
+  ///
+  /// Example:
+  /// ```dart
+  /// parser.command('build').set<UserService>(userService)
+  ///   .use<UserService>((s) => s.displayUser);
+  /// ```
+  Argv use<T extends Object>(ArgvCallback Function(T) callback) {
+    return on((res) async => await callback(res.get<T>())(res));
+  }
+
+  /// Assert that the result is valid
+  ///
+  /// It attach a callback by using the [on] method
+  ///
+  /// ```dart
+  /// parser.command('build')
+  ///   .positional('name')
+  ///   .validate((r)=> r.positional('name') != null);
+  /// ```
+  Argv validate(FutureOr<bool> Function(ArgvResult) validator) {
+    return on((res) async {
+      if (await validator(res)) return;
+      throw ArgvException('Assertion failed');
+    });
+  }
+
+  /// Attaches a callback to a group of commands
+  ///
+  /// It is used to group commands that are very similar
+  ///
+  /// Example:
+  /// ```dart
+  /// final enable = parser.command('enable');
+  /// final disable = parser.command('disable');
+  /// Argv.group([enable, disable], (p)=>p.positional('name').r);
+  /// ```
+  static void group(List<Argv> cmds, Argv Function(Argv) callback) {
+    for (final cmd in cmds) {
+      callback(cmd);
+    }
+  }
+
   /// Adds a positional argument to this command.
   ///
   /// Positional arguments are values that don't have names or flags.
@@ -649,7 +711,7 @@ class Argv {
     return acc;
   }
 
-  FutureOr<void> _exec(ArgvResult res) async {
+  Future<void> _exec(ArgvResult res) async {
     for (final callback in _on) {
       await callback(res);
     }
