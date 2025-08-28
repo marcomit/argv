@@ -980,12 +980,12 @@ class Argv {
     _validate(res);
     Argv curr = this;
 
-    curr._exec(res);
+    await curr._exec(res);
 
     for (final cmd in res._commands) {
       if (!curr._commands.containsKey(cmd)) break;
       curr = curr._commands[cmd]!;
-      curr._exec(res);
+      await curr._exec(res);
     }
 
     return res;

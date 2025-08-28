@@ -16,3 +16,6 @@
 - Fixed use function
 - Fixed set function
 - Fixed context and dependency injection
+
+## 1.0.5
+- Fixed async calls listeners functions
