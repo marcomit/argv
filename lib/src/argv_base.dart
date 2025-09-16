@@ -73,15 +73,18 @@ sealed class _Argument {
   /// * if [name] does not contains any special characters
   ///
   /// Throws [ArgvException] if validation fails.
-  void _validate() {
+  void _validate([Argv? last]) {
     if (name.isEmpty) {
-      throw ArgvException('Argument name cannot be empty');
+      throw ArgvException('Argument name cannot be empty', last);
     }
     if (name.contains(RegExp(r'[^a-zA-Z0-9\-_]'))) {
-      throw ArgvException('Invalid argument name: $name');
+      throw ArgvException('Invalid argument name: $name', last);
     }
     if (abbr != null && abbr!.length != 1) {
-      throw ArgvException('Abbreviation must be a single character: $abbr');
+      throw ArgvException(
+        'Abbreviation must be a single character: $abbr',
+        last,
+      );
     }
   }
 }
@@ -515,7 +518,7 @@ class Argv {
   Argv validate(FutureOr<bool> Function(ArgvResult) validator) {
     return on((res) async {
       if (await validator(res)) return;
-      throw ArgvException('Assertion failed');
+      throw ArgvException('Assertion failed', this);
     });
   }
 
@@ -632,7 +635,7 @@ class Argv {
   /// preventing duplicate argument names.
   void _checkAleadyInserted<T>(Map<T, dynamic> args, T key) {
     if (args.containsKey(key)) {
-      throw ArgvException('$key already resistered');
+      throw ArgvException('$key already resistered', this);
     }
   }
 
@@ -642,7 +645,10 @@ class Argv {
   /// conflicts exist. Throws [ArgvException] if conflict found.
   void _checkAbbreviation(String? abbr) {
     if (abbr == null) return;
-    final exception = ArgvException('Abbreviation $abbr already inserted');
+    final exception = ArgvException(
+      'Abbreviation $abbr already inserted',
+      this,
+    );
     for (final flag in _flags.values) {
       if (flag.abbr == abbr) throw exception;
     }
@@ -755,7 +761,7 @@ class Argv {
 
     if (splitted.length == 1) {
       if (args.isEmpty) {
-        throw ArgvException('Option value for $arg not provided');
+        throw ArgvException('Option value for $arg not provided', this);
       }
       expected = 1;
       if (args.length >= 2) {
@@ -771,11 +777,14 @@ class Argv {
         parsed = true;
         consumed = expected;
         if (opt.allowed.isNotEmpty && !opt.allowed.contains(value)) {
-          throw ArgvException('Option ${opt.name} value $value not allowed');
+          throw ArgvException(
+            'Option ${opt.name} value $value not allowed',
+            this,
+          );
         }
         if (value == null) {
           if (opt.defaultValue == null) {
-            throw ArgvException('Missing option value for $arg');
+            throw ArgvException('Missing option value for $arg', this);
           }
           value = opt.defaultValue;
         }
@@ -799,14 +808,14 @@ class Argv {
   /// Returns the closest matching candidate.
   String _findClosestMatch(String input, List<String> candidates) {
     int index = -1;
-    int max = 0;
+    int min = 1 << 31;
 
     for (int i = 0; i < candidates.length; i++) {
       final candidate = candidates[i];
       final curr = _getDistance(candidate, input);
-      if (curr > max) {
+      if (curr < min) {
         index = i;
-        max = curr;
+        min = curr;
       }
     }
     return candidates[index];
@@ -825,9 +834,15 @@ class Argv {
       candidates.add('--${c.name}');
       if (c.abbr != null) candidates.add('-${c.abbr}');
     }
+    candidates.addAll(_positionals);
+    candidates.addAll(_commands.keys);
+
+    if (candidates.isEmpty) {
+      throw ArgvException('Unknown argument $arg.', this);
+    }
     final closest = _findClosestMatch(arg, candidates);
 
-    throw ArgvException('Unknown argument $arg. Did you mean $closest?');
+    throw ArgvException('Unknown argument $arg. Did you mean $closest?', this);
   }
 
   /// Calculates edit distance between two strings.
@@ -925,7 +940,7 @@ class Argv {
     for (final flag in _flags.values) {
       if (!res._flags.containsKey(flag.name)) {
         if (flag.required) {
-          throw ArgvException('Flag ${flag.name} is required');
+          throw ArgvException('Flag ${flag.name} is required', this);
         }
         res._flags[flag.name] = flag.defaultTo;
       }
@@ -933,7 +948,7 @@ class Argv {
     for (final opt in _options.values) {
       if (!res._options.containsKey(opt.name)) {
         if (opt.defaultValue == null && opt.required) {
-          throw ArgvException('Missing required option ${opt.name}');
+          throw ArgvException('Missing required option ${opt.name}', this);
         }
         if (opt.defaultValue != null) {
           res._options[opt.name] = opt.defaultValue!;
@@ -942,13 +957,14 @@ class Argv {
         if (!opt.allowed.contains(res._options[opt.name]!)) {
           throw ArgvException(
             'Option ${opt.name} not allow value ${res._options[opt.name]!}',
+            this,
           );
         }
       }
     }
 
     if (_positionals.length > res._positionals.length) {
-      throw ArgvException('Missing positionals argument: $_positionals');
+      throw ArgvException('Missing positionals argument: $_positionals', this);
     }
   }
 
@@ -1020,7 +1036,8 @@ class ArgvException implements Exception {
   ///
   /// Parameters:
   /// * [message] descriptive error message explaining what went wrong
-  ArgvException(this.message);
+  /// * [last] is the last command that generates the error (used to print the usage)
+  ArgvException(this.message, [this.last]);
 
   /// The error message describing what went wrong.
   ///
@@ -1028,10 +1045,16 @@ class ArgvException implements Exception {
   /// suggestions for how to fix the problem.
   final String message;
 
+  /// The last command can be useful for print a better warning.
+  ///
+  /// This is designed to print the [Argv.usage] function to
+  /// suggest how the command should be used.
+  final Argv? last;
+
   /// Returns a string representation of the exception.
   ///
   /// The format is "ArgvException: [message]" which provides
   /// clear identification of the error type and details.
   @override
-  String toString() => 'ArgvException: $message';
+  String toString() => message;
 }

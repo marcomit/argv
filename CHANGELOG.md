@@ -19,3 +19,7 @@
 
 ## 1.0.5
 - Fixed async calls listeners functions
+
+## 1.0.6
+- Added command to the ArgvException for proper usage message
+- Added closest match for unknown arguments
