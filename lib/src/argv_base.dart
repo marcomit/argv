@@ -232,8 +232,40 @@ class ArgvResult {
   final Map<String, String> _positionals = {};
   final Map<Type, Object> _context = {};
 
+  /// The command path
+  List<String> get commands => List.unmodifiable(_commands);
+
+  /// Give a registered service.
+  ///
+  /// It is used with a matched [set] call.
+  /// If does not check if [T] is already registered
+  /// and throws an [Exception]
+  ///
+  /// Example:
+  /// ```dart
+  /// on((cli) => cli.set(MyServiceInstance()))
+  ///   .on((cli) {
+  ///     final service = cli.get<MyServiceInstance>();
+  ///     // use your service here...
+  /// });
+  /// ```
   T get<T extends Object>() => _context[T] as T;
 
+  /// Register an instance of type [T]
+  ///
+  /// It is a very simple DI pattern to pass the context through
+  /// different [Argv.on] callbacks.
+  /// It also used inside [Argv.use] to use a specific method of a service.
+  /// If it already exists the old instance will be replaced
+  ///
+  /// ```dart
+  /// on((cli) => cli.set(MyServiceInstance()))
+  ///   .on((cli) {
+  ///     final service = cli.get<MyServiceInstance>();
+  ///     // use your service here...
+  /// });
+  ///
+  /// ```
   void set<T extends Object>(T instance) => _context[T] = instance;
 
   /// Return the value of the flag [name]

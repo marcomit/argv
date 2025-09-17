@@ -23,3 +23,7 @@
 ## 1.0.6
 - Added command to the ArgvException for proper usage message
 - Added closest match for unknown arguments
+
+## 1.0.7
+- Added commands property to the ArgvResult
+- Commented the DI pattern inside ArgvResult
