@@ -694,7 +694,13 @@ class Argv {
   /// Returns a list of command names representing the path
   /// from the root command to this command.
   List<String> _getPath() {
-    return _fold(<String>[], (acc, p) => [p.name, ...acc]);
+    Argv? curr = this;
+    final res = <String>[];
+    while (curr != null) {
+      res.add(curr.name);
+      curr = curr._parent;
+    }
+    return res;
   }
 
   /// Collects all flags from this command and its ancestors.

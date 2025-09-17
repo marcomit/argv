@@ -1,6 +1,6 @@
 name: argv
 description: A sample arg parser for building CLI application following the GNU and POSIX options style
-version: 1.0.7
+version: 1.0.8
 repository: https://github.com/marcomit/argv
 
 environment:

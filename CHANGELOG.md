@@ -27,3 +27,6 @@
 ## 1.0.7
 - Added commands property to the ArgvResult
 - Commented the DI pattern inside ArgvResult
+
+## 1.0.8
+- Fixed the path command in the usage method
