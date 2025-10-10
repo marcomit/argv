@@ -30,3 +30,6 @@
 
 ## 1.0.8
 - Fixed the path command in the usage method
+
+## 1.0.9
+- Fixed the usage path in the usage method (it was in reversed order)

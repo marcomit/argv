@@ -700,7 +700,7 @@ class Argv {
       res.add(curr.name);
       curr = curr._parent;
     }
-    return res;
+    return res.reversed.toList();
   }
 
   /// Collects all flags from this command and its ancestors.
